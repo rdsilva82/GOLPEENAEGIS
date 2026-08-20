@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consola de Juego de Matriz — AEGIS / WUAYUU</title>
+<style>
+  :root{
+    --navy-950:#0B152C;
+    --navy-900:#0F1E3D;
+    --navy-800:#16294F;
+    --navy-700:#1F3864;
+    --navy-600:#2A4A82;
+    --gold:#B8962E;
+    --gold-bright:#E0B84A;
+    --parchment:#EDE6D6;
+    --ink:#F4F1EA;
+    --muted:#9FB0C8;
+    --green:#3E7C4A;
+    --green-dark:#2A5533;
+    --red:#B23A2E;
+    --red-dark:#7E271E;
+    --line:#2E4470;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--navy-950),var(--navy-950)),
+      repeating-linear-gradient(0deg, rgba(184,150,46,0.045) 0px, rgba(184,150,46,0.045) 1px, transparent 1px, transparent 42px),
+      repeating-linear-gradient(90deg, rgba(184,150,46,0.045) 0px, rgba(184,150,46,0.045) 1px, transparent 1px, transparent 42px);
+    color:var(--ink);
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    min-height:100vh;
+    padding:28px 34px 60px;
+  }
+  .eyebrow{
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    font-size:.85rem;
+    color:var(--gold-bright);
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  h1{
+    margin:0 0 2px;
+    font-size:2.5rem;
+    font-weight:800;
+    letter-spacing:.01em;
+    color:var(--ink);
+  }
+  .subtitle{color:var(--muted); font-size:1.05rem; margin:0 0 22px;}
+
+  /* ---------- Turn tabs ---------- */
+  .turn-tabs{display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
+  .turn-tab{
+    background:var(--navy-800);
+    border:2px solid var(--line);
+    color:var(--muted);
+    font-family:inherit;
+    font-weight:700;
+    font-size:1.05rem;
+    padding:10px 22px;
+    border-radius:6px;
+    cursor:pointer;
+    letter-spacing:.03em;
+    transition:.15s;
+  }
+  .turn-tab:hover{border-color:var(--gold);}
+  .turn-tab.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:var(--navy-950);
+  }
+
+  /* ---------- Actor strip ---------- */
+  .actor-strip{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding:14px 10px;
+    background:var(--navy-900);
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin-bottom:22px;
+  }
+  .actor-chip{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    min-width:96px;
+    padding:8px 6px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    border:2px solid transparent;
+    background:transparent;
+    transition:.15s;
+    color:var(--muted);
+  }
+  .actor-chip:hover{background:var(--navy-800);}
+  .actor-chip.active{
+    border-color:var(--gold);
+    background:var(--navy-800);
+    color:var(--ink);
+  }
+  .actor-chip .badge-mini{width:44px; height:44px;}
+  .actor-chip .lbl{font-size:.68rem; text-align:center; line-height:1.15; font-weight:700; letter-spacing:.01em;}
+
+  /* ---------- Hero: current actor ---------- */
+  .hero{
+    display:grid;
+    grid-template-columns:230px 1fr;
+    gap:26px;
+    align-items:center;
+    background:linear-gradient(135deg, var(--navy-800), var(--navy-900));
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 30px;
+    margin-bottom:26px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 18px, rgba(184,150,46,0.035) 18px 19px);
+    pointer-events:none;
+  }
+  .badge-wrap{
+    display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:1;
+  }
+  .badge-ring{
+    width:190px; height:190px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--navy-950);
+    border:4px solid var(--gold);
+    box-shadow:0 0 0 6px rgba(184,150,46,0.12), 0 10px 30px rgba(0,0,0,.4);
+  }
+  .badge-ring svg{width:70%; height:70%;}
+  .hero-info{position:relative; z-index:1;}
+  .hero-eyebrow{
+    color:var(--gold-bright);
+    text-transform:uppercase;
+    letter-spacing:.22em;
+    font-size:.82rem;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .hero-actor{
+    font-size:2.2rem;
+    font-weight:800;
+    line-height:1.15;
+    margin-bottom:14px;
+  }
+  .hero-nav{display:flex; gap:12px;}
+  .nav-btn{
+    background:var(--navy-700);
+    border:2px solid var(--line);
+    color:var(--ink);
+    font-family:inherit;
+    font-weight:700;
+    font-size:1rem;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .nav-btn:hover{border-color:var(--gold); background:var(--navy-600);}
+
+  /* ---------- Panels ---------- */
+  .panel{
+    background:var(--navy-800);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 26px;
+    margin-bottom:22px;
+  }
+  .panel-title{
+    display:flex; align-items:center; gap:10px;
+    font-size:1.05rem;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--gold-bright);
+    margin-bottom:14px;
+  }
+  .panel-title .tag{
+    background:var(--gold);
+    color:var(--navy-950);
+    font-size:.72rem;
+    font-weight:800;
+    padding:3px 10px;
+    border-radius:20px;
+    letter-spacing:.05em;
+  }
+  textarea{
+    width:100%;
+    background:var(--navy-950);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--ink);
+    font-family:inherit;
+    font-size:1.15rem;
+    line-height:1.5;
+    padding:14px 16px;
+    resize:vertical;
+    min-height:90px;
+  }
+  textarea:focus, select:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  textarea::placeholder{color:#5C6E8F;}
+
+  .contras-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:900px){
+    .contras-grid{grid-template-columns:1fr;}
+    .hero{grid-template-columns:1fr;}
+  }
+  .contra-block label{
+    display:block;
+    font-size:.85rem;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:6px;
+  }
+  select{
+    width:100%;
+    background:var(--navy-950);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:1.05rem;
+    padding:11px 12px;
+    border-radius:8px;
+    margin-bottom:12px;
+  }
+
+  /* ---------- Bottom row: dial + dice ---------- */
+  .bottom-row{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:22px;
+  }
+  @media (max-width:900px){.bottom-row{grid-template-columns:1fr;}}
+
+  .dial-wrap{display:flex; flex-direction:column; align-items:center;}
+  .dial-readout{
+    font-size:3.2rem;
+    font-weight:800;
+    color:var(--gold-bright);
+    margin-top:4px;
+    letter-spacing:.02em;
+  }
+  .dial-readout span{font-size:1.6rem; color:var(--muted); font-weight:700;}
+  svg.dial{width:100%; max-width:420px; height:auto; cursor:pointer;}
+  .tick-label{font-size:13px; fill:var(--muted); font-weight:700;}
+  .tick-hit{fill:transparent;}
+  .tick-hit:hover ~ .tick-dot, .tick-dot{transition:.1s;}
+
+  /* ---------- Dice ---------- */
+  .dice-wrap{display:flex; flex-direction:column; align-items:center; gap:18px;}
+  .dice-row{display:flex; gap:26px; align-items:center; justify-content:center;}
+  .die{
+    width:120px; height:120px;
+    border-radius:18px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    padding:16px;
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,.15), 0 10px 22px rgba(0,0,0,.4);
+  }
+  .die.green{background:linear-gradient(160deg,#4C9457,var(--green-dark));}
+  .die.red{background:linear-gradient(160deg,#CC4C3C,var(--red-dark));}
+  .pip{border-radius:50%; background:var(--ink); opacity:0; transform:scale(.6); transition:.15s;}
+  .pip.on{opacity:1; transform:scale(1);}
+  .p1{grid-area:1/1;} .p2{grid-area:1/3;} .p3{grid-area:2/1;}
+  .p4{grid-area:2/2;} .p5{grid-area:2/3;} .p6{grid-area:3/1;} .p7{grid-area:3/3;}
+  .die.rolling{animation:rolljig .5s ease;}
+  @keyframes rolljig{
+    0%{transform:rotate(0deg);}
+    25%{transform:rotate(-8deg);}
+    50%{transform:rotate(6deg);}
+    75%{transform:rotate(-4deg);}
+    100%{transform:rotate(0deg);}
+  }
+  .sum-line{display:flex; align-items:baseline; gap:14px; font-weight:800;}
+  .sum-line .label{font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;}
+  .sum-line .value{font-size:2.6rem; color:var(--gold-bright);}
+  .roll-btn{
+    background:var(--gold);
+    color:var(--navy-950);
+    border:none;
+    font-family:inherit;
+    font-weight:800;
+    font-size:1.2rem;
+    padding:14px 34px;
+    border-radius:10px;
+    cursor:pointer;
+    letter-spacing:.03em;
+    box-shadow:0 8px 18px rgba(184,150,46,.25);
+    transition:.15s;
+  }
+  .roll-btn:hover{background:var(--gold-bright); transform:translateY(-1px);}
+  .roll-btn:active{transform:translateY(0);}
+
+  /* ---------- Register / log ---------- */
+  .register-row{display:flex; gap:14px; justify-content:flex-end; margin-bottom:18px; flex-wrap:wrap;}
+  .btn-secondary{
+    background:transparent;
+    border:2px solid var(--line);
+    color:var(--muted);
+    font-family:inherit;
+    font-weight:700;
+    font-size:1rem;
+    padding:12px 22px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn-secondary:hover{border-color:var(--red); color:#F0AFA6;}
+  .btn-primary{
+    background:var(--navy-700);
+    border:2px solid var(--gold);
+    color:var(--ink);
+    font-family:inherit;
+    font-weight:800;
+    font-size:1.05rem;
+    padding:12px 26px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn-primary:hover{background:var(--gold); color:var(--navy-950);}
+
+  .log-table{width:100%; border-collapse:collapse; font-size:.98rem;}
+  .log-table th{
+    text-align:left; color:var(--gold-bright);
+    text-transform:uppercase; font-size:.72rem; letter-spacing:.06em;
+    padding:8px 10px; border-bottom:2px solid var(--line);
+  }
+  .log-table td{padding:10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .log-table tr:last-child td{border-bottom:none;}
+  .log-empty{color:var(--muted); font-style:italic; padding:14px 4px;}
+  .chip-sm{
+    display:inline-block; background:var(--navy-950); border:1px solid var(--line);
+    border-radius:20px; padding:3px 10px; font-size:.78rem; font-weight:700; color:var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Modelo de juego de matriz — sesión en vivo</p>
+<h1>Consola AEGIS / WUAYUU</h1>
+<p class="subtitle">Registro de Pros y Contras por turno, probabilidad de éxito y resolución por dados.</p>
+
+<div class="turn-tabs" id="turnTabs"></div>
+<div class="actor-strip" id="actorStrip"></div>
+
+<div class="hero">
+  <div class="badge-wrap"><div class="badge-ring" id="heroBadge"></div></div>
+  <div class="hero-info">
+    <div class="hero-eyebrow" id="heroTurnLabel">Turno 1</div>
+    <div class="hero-actor" id="heroActorName">—</div>
+    <div class="hero-nav">
+      <button class="nav-btn" id="prevActor">◀ Actor anterior</button>
+      <button class="nav-btn" id="nextActor">Actor siguiente ▶</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title"><span class="tag">PRO</span> Propuesta geopolítica del actor en turno</div>
+  <textarea id="proText" placeholder="Escriba aquí la propuesta (Pro) del actor seleccionado arriba..."></textarea>
+</div>
+
+<div class="panel">
+  <div class="panel-title"><span class="tag" style="background:var(--red); color:#fff;">CONTRA</span> Oposición de los otros dos actores</div>
+  <div class="contras-grid">
+    <div class="contra-block">
+      <label for="contra1Actor">Actor opositor 1</label>
+      <select id="contra1Actor"></select>
+      <label for="contra1Text">Argumento en contra (o dejar en blanco si no hay oposición)</label>
+      <textarea id="contra1Text" placeholder="Escriba el contra-argumento, o déjelo vacío..."></textarea>
+    </div>
+    <div class="contra-block">
+      <label for="contra2Actor">Actor opositor 2</label>
+      <select id="contra2Actor"></select>
+      <label for="contra2Text">Argumento en contra (o dejar en blanco si no hay oposición)</label>
+      <textarea id="contra2Text" placeholder="Escriba el contra-argumento, o déjelo vacío..."></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-row">
+  <div class="panel dial-wrap">
+    <div class="panel-title" style="align-self:flex-start;">Probabilidad de éxito</div>
+    <svg class="dial" id="dialSvg" viewBox="0 0 420 250"></svg>
+    <div class="dial-readout"><span id="dialValue">50</span><span>%</span></div>
+  </div>
+
+  <div class="panel dice-wrap">
+    <div class="panel-title" style="align-self:flex-start;">Tirada de resolución (2d6)</div>
+    <div class="dice-row">
+      <div class="die green" id="dieGreen"></div>
+      <div class="die red" id="dieRed"></div>
+    </div>
+    <div class="sum-line"><span class="label">Suma</span><span class="value" id="diceSum">—</span></div>
+    <button class="roll-btn" id="rollBtn">🎲 Tirar dados</button>
+  </div>
+</div>
+
+<div class="register-row">
+  <button class="btn-secondary" id="clearLogBtn">Reiniciar registro</button>
+  <button class="btn-primary" id="registerBtn">Registrar turno en el libro de sesión ▸</button>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Libro de sesión</div>
+  <div id="logHolder"><p class="log-empty">Aún no se ha registrado ningún turno.</p></div>
+</div>
+
+<script>
+/* ---------------- Actor data ---------------- */
+const ACTORS = [
+  { id:"altomando", name:"Alto Mando de las Fuerzas Armadas de AEGIS", color:"#8C97A8", accent:"#C9D0DB",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M50 10 L84 26 V54 C84 76 68 90 50 96 C32 90 16 76 16 54 V26 Z"/>
+      <path d="M50 32 L58 50 H42 Z" fill="currentColor" stroke="none"/>
+      <path d="M34 62 H66" /><path d="M34 72 H66"/>
+    </g>` },
+  { id:"yankilia", name:"YANKILIA", color:"#3D6FD1", accent:"#AFC6F2",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M50 12 L90 50 L50 88 L10 50 Z"/>
+      <path d="M50 30 L70 50 L50 70 L30 50 Z" fill="currentColor" stroke="none"/>
+    </g>` },
+  { id:"carioca", name:"CARIOCA", color:"#3E9B57", accent:"#B7E6C4",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round">
+      <circle cx="50" cy="50" r="38"/>
+      <path d="M50 12 V88 M12 50 H88 M22 22 L78 78 M78 22 L22 78"/>
+      <circle cx="50" cy="50" r="9" fill="currentColor" stroke="none"/>
+    </g>` },
+  { id:"zipa", name:"ZIPA", color:"#C97A3A", accent:"#F0C79A",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round">
+      <circle cx="50" cy="50" r="16" fill="currentColor" stroke="none"/>
+      <g stroke-width="6">
+        <path d="M50 6 V22"/><path d="M50 78 V94"/><path d="M6 50 H22"/><path d="M78 50 H94"/>
+        <path d="M19 19 L30 30"/><path d="M70 70 L81 81"/><path d="M81 19 L70 30"/><path d="M30 70 L19 81"/>
+      </g>
+    </g>` },
+  { id:"oposicion", name:"Oposición Democrática de AEGIS", color:"#8B5CD6", accent:"#D9C7F5",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M50 14 L86 34 V60 C86 78 70 90 50 96 C30 90 14 78 14 60 V34 Z" opacity="0"/>
+      <path d="M35 70 V46 C35 34 42 26 50 26 C58 26 65 34 65 46 V70" />
+      <path d="M28 70 H72 L66 84 H34 Z" fill="currentColor" stroke="none"/>
+    </g>` },
+  { id:"exilio", name:"Gobierno Interino de AEGIS (en el exilio, Isla de Puros)", color:"#1FA398", accent:"#A9E6E0",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 70 C30 60 70 60 86 70" />
+      <path d="M30 70 C30 44 36 30 36 30" />
+      <path d="M36 30 L54 38 L36 46 Z" fill="currentColor" stroke="none"/>
+      <circle cx="66" cy="56" r="7" fill="currentColor" stroke="none"/>
+    </g>` },
+  { id:"amarillo", name:"AMARILLO", color:"#D6A419", accent:"#F4DFA0",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M50 10 L90 50 L50 90 L10 50 Z"/>
+      <circle cx="50" cy="50" r="14" fill="currentColor" stroke="none"/>
+    </g>` },
+  { id:"vodka", name:"VODKA", color:"#3FB4DE", accent:"#B7E7F7",
+    icon:`<g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round">
+      <path d="M50 6 V94 M14 26 L86 74 M86 26 L14 74"/>
+      <circle cx="50" cy="50" r="8" fill="currentColor" stroke="none"/>
+    </g>` },
+];
+
+const TURNS = [1,2,3,4,5];
+
+/* ---------------- State ---------------- */
+let state = {
+  turn: 1,
+  actorIdx: 0,
+  prob: 50,
+  dice: { g: null, r: null },
+};
+let log = [];
+
+/* ---------------- Build: turn tabs ---------------- */
+const turnTabsEl = document.getElementById("turnTabs");
+TURNS.forEach(t=>{
+  const b = document.createElement("button");
+  b.className = "turn-tab" + (t===state.turn ? " active" : "");
+  b.textContent = "Turno " + t;
+  b.dataset.turn = t;
+  b.addEventListener("click", ()=>{ state.turn = t; refreshTurnTabs(); refreshHero(); });
+  turnTabsEl.appendChild(b);
+});
+function refreshTurnTabs(){
+  [...turnTabsEl.children].forEach(b=>{
+    b.classList.toggle("active", Number(b.dataset.turn)===state.turn);
+  });
+}
+
+/* ---------------- Build: actor strip ---------------- */
+const actorStripEl = document.getElementById("actorStrip");
+ACTORS.forEach((a,i)=>{
+  const chip = document.createElement("div");
+  chip.className = "actor-chip" + (i===state.actorIdx ? " active" : "");
+  chip.innerHTML = `
+    <div class="badge-mini" style="color:${a.color}">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">${a.icon}</svg>
+    </div>
+    <div class="lbl">${shortName(a.name)}</div>`;
+  chip.addEventListener("click", ()=>{ state.actorIdx = i; refreshAll(); });
+  actorStripEl.appendChild(chip);
+});
+function shortName(n){
+  const map = {
+    "Alto Mando de las Fuerzas Armadas de AEGIS":"ALTO MANDO",
+    "Oposición Democrática de AEGIS":"OPOSICIÓN",
+    "Gobierno Interino de AEGIS (en el exilio, Isla de Puros)":"G. INTERINO (exilio)",
+  };
+  return map[n] || n;
+}
+function refreshActorStrip(){
+  [...actorStripEl.children].forEach((c,i)=> c.classList.toggle("active", i===state.actorIdx));
+}
+
+/* ---------------- Hero ---------------- */
+function refreshHero(){
+  const a = ACTORS[state.actorIdx];
+  document.getElementById("heroTurnLabel").textContent = "Turno " + state.turn + " — orden " + (state.actorIdx+1) + " de 8";
+  document.getElementById("heroActorName").textContent = a.name;
+  document.getElementById("heroBadge").style.color = a.color;
+  document.getElementById("heroBadge").innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%">${a.icon}</svg>`;
+  document.getElementById("heroBadge").style.borderColor = a.color;
+  refreshTurnTabs();
+  refreshActorStrip();
+  populateContraSelects();
+}
+
+document.getElementById("prevActor").addEventListener("click", ()=>{
+  state.actorIdx = (state.actorIdx - 1 + ACTORS.length) % ACTORS.length;
+  refreshAll();
+});
+document.getElementById("nextActor").addEventListener("click", ()=>{
+  state.actorIdx = (state.actorIdx + 1) % ACTORS.length;
+  refreshAll();
+});
+
+/* ---------------- Contra selects ---------------- */
+function populateContraSelects(){
+  const others = ACTORS.filter((a,i)=> i!==state.actorIdx);
+  [ "contra1Actor","contra2Actor" ].forEach((id, sel)=>{
+    const el = document.getElementById(id);
+    el.innerHTML = "";
+    others.forEach((a,i)=>{
+      const opt = document.createElement("option");
+      opt.value = a.name;
+      opt.textContent = a.name;
+      if(i===sel) opt.selected = true;
+      el.appendChild(opt);
+    });
+  });
+}
+
+/* ---------------- Probability dial ---------------- */
+const dialSvg = document.getElementById("dialSvg");
+const CX=210, CY=210, R_OUTER=190, R_TICK=170, R_LABEL=150, R_NEEDLE=160;
+
+function polar(cx,cy,r,deg){
+  const rad = deg*Math.PI/180;
+  return { x: cx + r*Math.cos(rad), y: cy - r*Math.sin(rad) };
+}
+function thetaForPercent(p){ return 180 - (p/100)*180; }
+
+function drawDial(){
+  dialSvg.innerHTML = "";
+  const ns = "http://www.w3.org/2000/svg";
+  // background arc
+  const bg = document.createElementNS(ns,"path");
+  const start = polar(CX,CY,R_OUTER,180), end = polar(CX,CY,R_OUTER,0);
+  bg.setAttribute("d", `M ${start.x} ${start.y} A ${R_OUTER} ${R_OUTER} 0 0 1 ${end.x} ${end.y}`);
+  bg.setAttribute("fill","none"); bg.setAttribute("stroke","#2E4470"); bg.setAttribute("stroke-width","18");
+  bg.setAttribute("stroke-linecap","round");
+  dialSvg.appendChild(bg);
+
+  // progress arc
+  const prog = document.createElementNS(ns,"path");
+  const pStart = polar(CX,CY,R_OUTER,180), pEnd = polar(CX,CY,R_OUTER, thetaForPercent(state.prob));
+  const largeArc = state.prob > 50 ? 1 : 0;
+  prog.setAttribute("d", `M ${pStart.x} ${pStart.y} A ${R_OUTER} ${R_OUTER} 0 ${largeArc} 1 ${pEnd.x} ${pEnd.y}`);
+  prog.setAttribute("fill","none"); prog.setAttribute("stroke","#B8962E"); prog.setAttribute("stroke-width","18");
+  prog.setAttribute("stroke-linecap","round");
+  dialSvg.appendChild(prog);
+
+  // ticks + click zones + labels
+  for(let p=0;p<=100;p+=10){
+    const th = thetaForPercent(p);
+    const t1 = polar(CX,CY,R_TICK-10,th);
+    const t2 = polar(CX,CY,R_TICK+10,th);
+    const tick = document.createElementNS(ns,"line");
+    tick.setAttribute("x1",t1.x); tick.setAttribute("y1",t1.y);
+    tick.setAttribute("x2",t2.x); tick.setAttribute("y2",t2.y);
+    tick.setAttribute("stroke", p===state.prob ? "#E0B84A" : "#6E82AA");
+    tick.setAttribute("stroke-width", p===state.prob ? 5 : 3);
+    dialSvg.appendChild(tick);
+
+    const lab = polar(CX,CY,R_LABEL,th);
+    const text = document.createElementNS(ns,"text");
+    text.setAttribute("x",lab.x); text.setAttribute("y",lab.y+5);
+    text.setAttribute("text-anchor","middle");
+    text.setAttribute("class","tick-label");
+    text.textContent = p;
+    dialSvg.appendChild(text);
+
+    // click hit-zone
+    const hit = document.createElementNS(ns,"circle");
+    const hp = polar(CX,CY,R_OUTER,th);
+    hit.setAttribute("cx",hp.x); hit.setAttribute("cy",hp.y); hit.setAttribute("r",16);
+    hit.setAttribute("fill","transparent");
+    hit.style.cursor="pointer";
+    hit.addEventListener("click", ()=>{ state.prob = p; refreshDial(); });
+    dialSvg.appendChild(hit);
+  }
+
+  // needle
+  const needleEnd = polar(CX,CY,R_NEEDLE, thetaForPercent(state.prob));
+  const needle = document.createElementNS(ns,"line");
+  needle.setAttribute("id","needle");
+  needle.setAttribute("x1",CX); needle.setAttribute("y1",CY);
+  needle.setAttribute("x2",needleEnd.x); needle.setAttribute("y2",needleEnd.y);
+  needle.setAttribute("stroke","#F4F1EA"); needle.setAttribute("stroke-width","5"); needle.setAttribute("stroke-linecap","round");
+  needle.style.transition = "all .15s ease";
+  dialSvg.appendChild(needle);
+
+  const pivot = document.createElementNS(ns,"circle");
+  pivot.setAttribute("cx",CX); pivot.setAttribute("cy",CY); pivot.setAttribute("r",10);
+  pivot.setAttribute("fill","#B8962E");
+  dialSvg.appendChild(pivot);
+
+  document.getElementById("dialValue").textContent = state.prob;
+}
+function refreshDial(){ drawDial(); }
+
+/* drag support */
+let dragging = false;
+dialSvg.addEventListener("pointerdown", e=>{ dragging=true; handleDrag(e); });
+window.addEventListener("pointermove", e=>{ if(dragging) handleDrag(e); });
+window.addEventListener("pointerup", ()=> dragging=false);
+function handleDrag(e){
+  const rect = dialSvg.getBoundingClientRect();
+  const scale = 420/rect.width;
+  const x = (e.clientX-rect.left)*scale;
+  const y = (e.clientY-rect.top)*scale;
+  let dx = x-CX, dy = CY-y;
+  if(dy < -20) return; // ignore below baseline
+  dy = Math.max(dy,0);
+  let deg = Math.atan2(dy,dx)*180/Math.PI;
+  deg = Math.max(0, Math.min(180, deg));
+  let pct = Math.round((180-deg)/180*100/10)*10;
+  pct = Math.max(0, Math.min(100, pct));
+  state.prob = pct;
+  refreshDial();
+}
+
+/* ---------------- Dice ---------------- */
+const PIP_LAYOUTS = {
+  1:[4],
+  2:[1,7],
+  3:[1,4,7],
+  4:[1,2,6,7],
+  5:[1,2,4,6,7],
+  6:[1,2,3,5,6,7],
+};
+function buildDie(el){
+  el.innerHTML = "";
+  for(let i=1;i<=7;i++){
+    if(i===4){ const d=document.createElement("div"); d.className="pip p4"; d.dataset.slot=4; el.appendChild(d); continue; }
+    const d = document.createElement("div");
+    d.className = "pip p" + i;
+    d.dataset.slot = i;
+    el.appendChild(d);
+  }
+}
+function setDie(el, value){
+  const active = new Set(PIP_LAYOUTS[value]);
+  [...el.children].forEach(pip=>{
+    const slot = Number(pip.dataset.slot);
+    pip.classList.toggle("on", active.has(slot));
+  });
+}
+const dieGreenEl = document.getElementById("dieGreen");
+const dieRedEl = document.getElementById("dieRed");
+buildDie(dieGreenEl); buildDie(dieRedEl);
+setDie(dieGreenEl,1); setDie(dieRedEl,1);
+
+document.getElementById("rollBtn").addEventListener("click", ()=>{
+  dieGreenEl.classList.add("rolling");
+  dieRedEl.classList.add("rolling");
+  let ticks = 0;
+  const iv = setInterval(()=>{
+    setDie(dieGreenEl, 1+Math.floor(Math.random()*6));
+    setDie(dieRedEl, 1+Math.floor(Math.random()*6));
+    ticks++;
+    if(ticks>6){
+      clearInterval(iv);
+      const g = 1+Math.floor(Math.random()*6);
+      const r = 1+Math.floor(Math.random()*6);
+      setDie(dieGreenEl,g); setDie(dieRedEl,r);
+      state.dice = {g, r};
+      document.getElementById("diceSum").textContent = (g+r) + "  (" + g + " + " + r + ")";
+      dieGreenEl.classList.remove("rolling");
+      dieRedEl.classList.remove("rolling");
+    }
+  }, 70);
+});
+
+/* ---------------- Register / log ---------------- */
+document.getElementById("registerBtn").addEventListener("click", ()=>{
+  const a = ACTORS[state.actorIdx];
+  const entry = {
+    turn: state.turn,
+    actor: a.name,
+    color: a.color,
+    pro: document.getElementById("proText").value.trim(),
+    c1actor: document.getElementById("contra1Actor").value,
+    c1text: document.getElementById("contra1Text").value.trim(),
+    c2actor: document.getElementById("contra2Actor").value,
+    c2text: document.getElementById("contra2Text").value.trim(),
+    prob: state.prob,
+    dice: state.dice.g!==null ? `${state.dice.g} + ${state.dice.r} = ${state.dice.g+state.dice.r}` : "—",
+  };
+  log.unshift(entry);
+  renderLog();
+  // clear inputs, advance to next actor for convenience
+  document.getElementById("proText").value = "";
+  document.getElementById("contra1Text").value = "";
+  document.getElementById("contra2Text").value = "";
+  state.actorIdx = (state.actorIdx + 1) % ACTORS.length;
+  refreshAll();
+});
+
+document.getElementById("clearLogBtn").addEventListener("click", ()=>{
+  if(log.length && !confirm("¿Reiniciar el libro de sesión? Esto borrará todos los turnos registrados.")) return;
+  log = [];
+  renderLog();
+});
+
+function renderLog(){
+  const holder = document.getElementById("logHolder");
+  if(!log.length){
+    holder.innerHTML = '<p class="log-empty">Aún no se ha registrado ningún turno.</p>';
+    return;
+  }
+  let rows = log.map(e=>`
+    <tr>
+      <td><span class="chip-sm">T${e.turn}</span></td>
+      <td style="color:${e.color}; font-weight:800;">${e.actor}</td>
+      <td>${e.pro || "<em style='color:#5C6E8F'>(sin registrar)</em>"}</td>
+      <td>${e.c1actor}: ${e.c1text || "<em style='color:#5C6E8F'>sin oposición</em>"}<br>${e.c2actor}: ${e.c2text || "<em style='color:#5C6E8F'>sin oposición</em>"}</td>
+      <td>${e.prob}%</td>
+      <td>${e.dice}</td>
+    </tr>`).join("");
+  holder.innerHTML = `<table class="log-table">
+    <thead><tr><th>Turno</th><th>Actor</th><th>Pro</th><th>Contras</th><th>Prob.</th><th>Dados</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------- Init ---------------- */
+function refreshAll(){
+  refreshHero();
+  refreshDial();
+}
+refreshAll();
+</script>
+</body>
+</html>
